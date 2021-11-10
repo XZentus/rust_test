@@ -4,97 +4,40 @@ use rand::thread_rng;
 use rand::Rng;
 use rand::rngs::ThreadRng;
 
-#[derive(Clone)]
-struct MatrixCreatorElement {
-    value: u32,
-    remaining_values: Vec<u32>,
-    number_nonzero: u32,
-} 
-
 fn gen_matrix(size: usize, rng: &mut ThreadRng) -> Vec<Vec<u32>> {
-    let mut matrix = vec![vec![MatrixCreatorElement{value: 0,
-                                                    remaining_values: (1..=size as u32).collect(),
-                                                    number_nonzero: size as u32};
-                               size];
-                          size];
-    struct Env<'a> { matrix: &'a mut Vec<Vec<MatrixCreatorElement>>,
+    let mut matrix = vec![vec![0u32; size]];
+    struct Env<'a> { m: &'a mut Vec<Vec<u32>>,
                      size: usize,
-                     rng: &'a mut ThreadRng}
+                     rng: &'a mut ThreadRng };
     fn gen_next_value(x: usize, y: usize, env: &mut Env) -> bool { // true => success, false => error
-        if y >= env.size { // end of generating
-            return true;
-        } else if x >= env.size { // end of row
-            return gen_next_value(0, y + 1, env);
-        }
-
+        if y > env.size { return true; }
+        if x > env.size { return get_next_value(0, y + 1, env); }
         loop {
-            println!("{} {} {:?}", x, y, env.matrix[y][x].remaining_values);
-            let number_nonzero = env.matrix[y][x].number_nonzero;
-            if number_nonzero == 0 {
-                return false;
-            }
-            let new_val = if number_nonzero == 1 {
-                              let mut val = 0;
-                              for i in env.matrix[y][x].remaining_values.iter() {
-                                  if *i != 0 {
-                                      val = *i;
-                                      break;
-                                  }
-                              }
-                              val
-                          } else {
-                              let mut i = env.rng.gen_range(0..number_nonzero as u32);
-                              let mut res = 0;
-                              // get i-th number in remaining values
-                              for n in env.matrix[y][x].remaining_values.iter() {
-                                  if *n != 0 {
-                                      if i == 0 {
-                                          res = *n;
-                                          break;
-                                      }
-                                      else {
-                                          i -= 1;
-                                      }
-                                  }
-                              }
-                              res
-                          };
-            env.matrix[y][x].value = new_val;
-            println!("{}", new_val);
-            env.matrix[y][x].remaining_values[new_val as usize - 1] = 0;
-            env.matrix[y][x].number_nonzero -= 1;
-
-            for x in x+1..env.size {
-                env.matrix[y][x].remaining_values[new_val as usize - 1] = 0;
-                if env.matrix[y][x].number_nonzero == 0 {
-                    return false
-                } else {
-                    env.matrix[y][x].number_nonzero -= 1;
-                }
-            }
-            for y in y+1..env.size {
-                env.matrix[y][x].remaining_values[new_val as usize - 1] = 0;
-                if env.matrix[y][x].number_nonzero == 0 {
-                    return false
-                } else {
-                    env.matrix[y][x].number_nonzero -= 1;
-                }
-            }
-            if gen_next_value(x + 1, y, env) {
-                return true;
-            }
+            ;
         }
     }
 
-    gen_next_value(0, 0, &mut Env{ matrix: &mut matrix,
+    gen_next_value(0, 0, &mut Env{ m: &mut matrix,
                                    size: size,
                                    rng: rng});
+    matrix
+}
 
-    matrix.into_iter()
-          .map(|row| row.into_iter()
-                        .map(|e| e.value)
-                        .collect())
-          .collect()
+fn get_allowed_nums(x: usize, y: usize, m: &Vec<Vec<u32>>, res: &mut Vec<u32>) {
+    let size = m.len();
+    res.resize(size, 0);
+    for i in 1..=size {
+        res[i - 1] = i as u32;
+    }
+    for _x in 0..size {
+        if _x == x { continue; }
+        res[(m[y][_x] - 1) as usize] = 0;
+    }
+    for _y in 0..size {
+        if _y == y { continue; }
+        res[(m[_y][x] - 1) as usize] = 0;
+    }
+    res.retain(|&x| x != 0);
 }
 
 fn main() {
