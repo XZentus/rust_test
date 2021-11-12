@@ -17,15 +17,19 @@ fn gen_matrix(size: usize, rng: &mut ThreadRng) -> Vec<Vec<u32>> {
         buffer.resize(env.size, 0);
         get_allowed_nums(x, y, env.m, &mut buffer);
         loop {
-            let numbers_to_try = buffer.len();
-            if numbers_to_try == 0 { return false; }
-            else if numbers_to_try == 1 {
-                env.m[y][x] = buffer[0];
-                buffer.pop();
-            } else {
-                let i = env.rng.gen_range(0..numbers_to_try);
-                env.m[y][x] = buffer[i];
-                buffer.swap_remove(i);
+            match buffer.len() {
+                0 => return false,
+                1 => {  env.m[y][x] = buffer[0];
+                        buffer.pop();
+                     },
+                i => { let i = env.rng.gen_range(0..i);
+                       env.m[y][x] = buffer[i];
+                       buffer.swap_remove(i);
+                     }
+            }
+
+            if env.m[y][x] == 0 {
+                println!("ZERO: {:?}, {} {}", buffer, x, y);
             }
 
             if gen_next_value(x + 1, y, env) { return true; }
@@ -39,7 +43,7 @@ fn gen_matrix(size: usize, rng: &mut ThreadRng) -> Vec<Vec<u32>> {
 }
 
 fn get_allowed_nums(x: usize, y: usize, m: &Vec<Vec<u32>>, res: &mut Vec<u32>) {
-    let size = res.len();
+    let size = m.len();
     for i in 1..=size {
         res[i - 1] = i as u32;
     }
@@ -56,7 +60,7 @@ fn get_allowed_nums(x: usize, y: usize, m: &Vec<Vec<u32>>, res: &mut Vec<u32>) {
 
 fn main() {
     let mut rng = thread_rng();
-    let init_line: Vec<Vec<u32>> = gen_matrix(9, &mut rng);
+    let init_line: Vec<Vec<u32>> = gen_matrix(19, &mut rng);
     for row in init_line.iter() {
         println!("{:?}", row);
     }
