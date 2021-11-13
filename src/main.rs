@@ -3,9 +3,9 @@ extern crate rand;
 use rand::thread_rng;
 use rand::Rng;
 use rand::rngs::ThreadRng;
+// use std::cmp::max;
 
 fn gen_matrix(size: usize, rng: &mut ThreadRng) -> Vec<Vec<u32>> {
-    let mut matrix = vec![vec![0u32; size]; size];
     struct Env<'a> { m: &'a mut Vec<Vec<u32>>,
                      size: usize,
                      rng: &'a mut ThreadRng }
@@ -28,18 +28,57 @@ fn gen_matrix(size: usize, rng: &mut ThreadRng) -> Vec<Vec<u32>> {
                      }
             }
 
-            if env.m[y][x] == 0 {
-                println!("ZERO: {:?}, {} {}", buffer, x, y);
-            }
-
             if gen_next_value(x + 1, y, env) { return true; }
         }
     }
 
-    gen_next_value(0, 0, &mut Env{ m: &mut matrix,
-                                   size: size,
-                                   rng: rng });
+    let mut matrix = vec![vec![0u32; size]; size];
+    while !gen_next_value(0, 0, &mut Env{ m: &mut matrix,
+                                         size: size,
+                                         rng: rng }) {
+        println!("Failed:");
+        for row in matrix.iter() {
+            println!("{:?}", row);
+        }
+        for row in &mut matrix { row.fill(0); }
+    }
     matrix
+}
+
+fn print_board(m: &Vec<Vec<u32>>) {
+    // let mut max_value: u32 = *m.iter()
+    //                            .flatten()
+    //                            .reduce(max)
+    //                            .unwrap();
+    let mut max_value = m.len();
+    let w = { let mut w = 1;
+              while max_value > 9 {
+                  max_value /= 10;
+                  w += 1;
+              }
+              w
+            };
+    fn print_w(x: u32, w: usize) {
+        let num_s = format!("{}", x);
+        print!("| ");
+        (0..w - num_s.len()).for_each(|_| print!(" "));
+        print!("{} ", num_s);
+    }
+    
+    let mut sep_string = String::with_capacity((w + 3) * m.len() + 2);
+    let dsh_parts: String = (0..w + 2).map(|_| '-').collect();
+    for _ in 0..m.len() {
+        sep_string.push('+');
+        sep_string.push_str(&dsh_parts);
+    }
+    sep_string.push('+');
+
+    (0..m.len()).for_each(|y| {
+                    println!("{}", sep_string);
+                    m[y].iter().for_each(| x | print_w(*x, w));
+                    println!("|");
+                });
+    println!("{}", sep_string);
 }
 
 fn get_allowed_nums(x: usize, y: usize, m: &Vec<Vec<u32>>, res: &mut Vec<u32>) {
@@ -60,8 +99,6 @@ fn get_allowed_nums(x: usize, y: usize, m: &Vec<Vec<u32>>, res: &mut Vec<u32>) {
 
 fn main() {
     let mut rng = thread_rng();
-    let init_line: Vec<Vec<u32>> = gen_matrix(19, &mut rng);
-    for row in init_line.iter() {
-        println!("{:?}", row);
-    }
+    let board: Vec<Vec<u32>> = gen_matrix(5, &mut rng);
+    print_board(&board);
 }
